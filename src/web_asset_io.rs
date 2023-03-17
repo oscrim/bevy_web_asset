@@ -34,7 +34,7 @@ impl AssetIo for WebAssetIo {
                     .map(|r| r.dyn_into::<web_sys::Response>().unwrap())
                     .map_err(|e| e.dyn_into::<js_sys::TypeError>().unwrap());
 
-                if let Err(err) = &response {
+                if let Err(_) = &response {
                     // warn!("Failed to fetch asset {uri}: {err:?}");
                 }
 
