@@ -28,6 +28,7 @@ use super::WebAssetIo;
 pub struct WebAssetPlugin {
     /// Settings for the underlying (regular) AssetPlugin
     pub asset_plugin: AssetPlugin,
+    pub headers: String,
 }
 
 impl Plugin for WebAssetPlugin {
@@ -38,6 +39,8 @@ impl Plugin for WebAssetPlugin {
             asset_folder: self.asset_plugin.asset_folder.clone(),
             watch_for_changes: false,
         };
+
+        let headers = self.headers.clone();
 
         // Create the `FileAssetIo` wrapper
         let asset_io = {
@@ -57,6 +60,7 @@ impl Plugin for WebAssetPlugin {
                 default_io,
                 root_path,
                 filesystem_watcher,
+                headers,
             }
         };
 
