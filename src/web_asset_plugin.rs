@@ -18,12 +18,15 @@ use super::WebAssetIo;
 /// ```
 ///});
 #[derive(Default)]
-pub struct WebAssetPlugin;
+pub struct WebAssetPlugin {
+    pub headers: String,
+}
 
 impl Plugin for WebAssetPlugin {
     fn build(&self, app: &mut App) {
         let asset_io = WebAssetIo {
             default_io: AssetPlugin::default().create_platform_default_asset_io(),
+            headers: self.headers.clone(),
         };
 
         app.insert_resource(AssetServer::new(asset_io));

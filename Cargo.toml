@@ -23,7 +23,7 @@ surf = {version = "2.3", default-features = false, features = ["h1-client-rustls
 js-sys = {version = "0.3", default-features = false}
 wasm-bindgen = {version = "0.2", default-features = false}
 wasm-bindgen-futures = "0.4"
-web-sys = {version = "0.3.22", default-features = false}
+web-sys = {version = "0.3.22", default-features = false, features = ["Window", "RequestInit", "Request"]}
 
 [dev-dependencies]
 bevy = {version = "0.10", default-features = false, features = [
