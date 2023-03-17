@@ -1,6 +1,7 @@
 use bevy::{
     asset::{AssetIo, AssetIoError, BoxedFuture},
     prelude::warn,
+    utils::hashbrown::HashMap,
 };
 use std::{
     path::{Path, PathBuf},
@@ -14,7 +15,7 @@ pub struct WebAssetIo {
     pub(crate) root_path: PathBuf,
     pub(crate) default_io: Box<dyn AssetIo>,
     pub(crate) filesystem_watcher: Arc<RwLock<Option<FilesystemWatcher>>>,
-    pub(crate) headers: Arc<RwLock<Option<String>>>,
+    pub(crate) headers: Arc<RwLock<HashMap<String, String>>>,
 }
 
 fn is_http(path: &Path) -> bool {
@@ -31,16 +32,16 @@ impl AssetIo for WebAssetIo {
             #[cfg(target_arch = "wasm32")]
             let fut = Box::pin(async move {
                 use wasm_bindgen::JsCast;
-                use wasm_bindgen::JsValue;
                 use wasm_bindgen_futures::JsFuture;
-                use web_sys::RequestInit;
                 let window = web_sys::window().unwrap();
-                let mut request_init = RequestInit::new();
-                if let Some(hs) = &headers {
-                    request_init.headers(&JsValue::from_str(hs));
+
+                let request = web_sys::Request::new_with_str(uri).unwrap();
+
+                for (name, value) in headers {
+                    request.headers().set(&name, &value).unwrap();
                 }
 
-                let response = JsFuture::from(window.fetch_with_str_and_init(uri, &request_init))
+                let response = JsFuture::from(window.fetch_with_request(&request))
                     .await
                     .map(|r| r.dyn_into::<web_sys::Response>().unwrap())
                     .map_err(|e| e.dyn_into::<js_sys::TypeError>().unwrap());

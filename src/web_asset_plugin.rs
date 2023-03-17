@@ -1,6 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::asset::FileAssetIo;
 use bevy::prelude::*;
+use bevy::utils::hashbrown::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
@@ -87,5 +88,7 @@ impl Plugin for WebAssetPlugin {
 }
 
 /// Contains a string of all the added headers for http calls
-#[derive(Default, Resource)]
-pub struct HttpHeader(pub Arc<RwLock<Option<String>>>);
+///
+/// (name, value)
+#[derive(Default, Resource, Deref)]
+pub struct HttpHeader(pub Arc<RwLock<HashMap<String, String>>>);
