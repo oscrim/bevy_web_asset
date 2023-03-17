@@ -1,5 +1,7 @@
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::asset::FileAssetIo;
 use bevy::prelude::*;
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use super::filesystem_watcher::FilesystemWatcher;
@@ -28,7 +30,6 @@ use super::WebAssetIo;
 pub struct WebAssetPlugin {
     /// Settings for the underlying (regular) AssetPlugin
     pub asset_plugin: AssetPlugin,
-    pub headers: String,
 }
 
 impl Plugin for WebAssetPlugin {
@@ -40,7 +41,7 @@ impl Plugin for WebAssetPlugin {
             watch_for_changes: false,
         };
 
-        let headers = self.headers.clone();
+        let http_headers = HttpHeader::default();
 
         // Create the `FileAssetIo` wrapper
         let asset_io = {
@@ -54,18 +55,23 @@ impl Plugin for WebAssetPlugin {
             let default_io = asset_plugin.create_platform_default_asset_io();
 
             // The method doesn't change, so we just use `FileAssetIo`'s
+            #[cfg(not(target_arch = "wasm32"))]
             let root_path = FileAssetIo::get_base_path().join(&self.asset_plugin.asset_folder);
+
+            #[cfg(target_arch = "wasm32")]
+            let root_path = PathBuf::from(&self.asset_plugin.asset_folder);
 
             WebAssetIo {
                 default_io,
                 root_path,
                 filesystem_watcher,
-                headers,
+                headers: http_headers.0.clone(),
             }
         };
 
         // Add the asset server with our `WebAssetIo` wrapping `FileAssetIo`
         app.insert_resource(AssetServer::new(asset_io));
+        app.insert_resource(http_headers);
 
         // Add the asset plugin
         app.add_plugin(asset_plugin);
@@ -79,3 +85,6 @@ impl Plugin for WebAssetPlugin {
         }
     }
 }
+
+#[derive(Default, Resource)]
+pub struct HttpHeader(pub Arc<RwLock<String>>);
