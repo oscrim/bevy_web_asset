@@ -1,12 +1,5 @@
-<<<<<<< HEAD
 use bevy::prelude::*;
-=======
-#[cfg(not(target_arch = "wasm32"))]
-use bevy::asset::FileAssetIo;
-use bevy::prelude::*;
-use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
->>>>>>> b097543 (Header resource)
 
 use super::WebAssetIo;
 
@@ -41,5 +34,6 @@ impl Plugin for WebAssetPlugin {
     }
 }
 
+/// Contains a string of all the added headers for http calls
 #[derive(Default, Resource)]
-pub struct HttpHeader(pub Arc<RwLock<String>>);
+pub struct HttpHeader(pub Arc<RwLock<Option<String>>>);

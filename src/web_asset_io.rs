@@ -2,12 +2,15 @@ use bevy::{
     asset::{AssetIo, AssetIoError},
     utils::BoxedFuture,
 };
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, RwLock},
+};
 
 /// Wraps the default bevy AssetIo and adds support for loading http urls
 pub struct WebAssetIo {
     pub(crate) default_io: Box<dyn AssetIo>,
-    pub(crate) headers: Arc<RwLock<String>>,
+    pub(crate) headers: Arc<RwLock<Option<String>>>,
 }
 
 fn is_http(path: &Path) -> bool {
@@ -29,7 +32,9 @@ impl AssetIo for WebAssetIo {
                 use web_sys::RequestInit;
                 let window = web_sys::window().unwrap();
                 let mut request_init = RequestInit::new();
-                request_init.headers(&JsValue::from_str(&headers));
+                if let Some(hs) = &headers {
+                    request_init.headers(&JsValue::from_str(hs));
+                }
 
                 let response = JsFuture::from(window.fetch_with_str_and_init(uri, &request_init))
                     .await
