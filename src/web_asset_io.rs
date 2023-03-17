@@ -6,8 +6,6 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
-use wasm_bindgen::JsValue;
-use web_sys::RequestInit;
 
 use super::filesystem_watcher::FilesystemWatcher;
 
@@ -31,7 +29,9 @@ impl AssetIo for WebAssetIo {
             #[cfg(target_arch = "wasm32")]
             let fut = Box::pin(async move {
                 use wasm_bindgen::JsCast;
+                use wasm_bindgen::JsValue;
                 use wasm_bindgen_futures::JsFuture;
+                use web_sys::RequestInit;
                 let window = web_sys::window().unwrap();
                 let mut request_init = RequestInit::new();
                 request_init.headers(&JsValue::from_str(&self.headers));
