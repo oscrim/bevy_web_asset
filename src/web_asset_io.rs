@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 /// Wraps the default bevy AssetIo and adds support for loading http urls
 pub struct WebAssetIo {
     pub(crate) default_io: Box<dyn AssetIo>,
-    pub(crate) headers: String,
+    pub(crate) headers: Arc<RwLock<String>>,
 }
 
 fn is_http(path: &Path) -> bool {
@@ -19,6 +19,8 @@ impl AssetIo for WebAssetIo {
         if is_http(path) {
             let uri = path.to_str().unwrap();
 
+            let headers = { self.headers.read().unwrap().clone() };
+
             #[cfg(target_arch = "wasm32")]
             let fut = Box::pin(async move {
                 use wasm_bindgen::JsCast;
@@ -27,7 +29,7 @@ impl AssetIo for WebAssetIo {
                 use web_sys::RequestInit;
                 let window = web_sys::window().unwrap();
                 let mut request_init = RequestInit::new();
-                request_init.headers(&JsValue::from_str(&self.headers));
+                request_init.headers(&JsValue::from_str(&headers));
 
                 let response = JsFuture::from(window.fetch_with_str_and_init(uri, &request_init))
                     .await
