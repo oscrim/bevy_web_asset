@@ -86,5 +86,6 @@ impl Plugin for WebAssetPlugin {
     }
 }
 
+/// Contains a string of all the added headers for http calls
 #[derive(Default, Resource)]
-pub struct HttpHeader(pub Arc<RwLock<String>>);
+pub struct HttpHeader(pub Arc<RwLock<Option<String>>>);

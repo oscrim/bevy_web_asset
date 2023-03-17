@@ -14,7 +14,7 @@ pub struct WebAssetIo {
     pub(crate) root_path: PathBuf,
     pub(crate) default_io: Box<dyn AssetIo>,
     pub(crate) filesystem_watcher: Arc<RwLock<Option<FilesystemWatcher>>>,
-    pub(crate) headers: Arc<RwLock<String>>,
+    pub(crate) headers: Arc<RwLock<Option<String>>>,
 }
 
 fn is_http(path: &Path) -> bool {
@@ -36,7 +36,9 @@ impl AssetIo for WebAssetIo {
                 use web_sys::RequestInit;
                 let window = web_sys::window().unwrap();
                 let mut request_init = RequestInit::new();
-                request_init.headers(&JsValue::from_str(&headers));
+                if let Some(hs) = &headers {
+                    request_init.headers(&JsValue::from_str(hs));
+                }
 
                 let response = JsFuture::from(window.fetch_with_str_and_init(uri, &request_init))
                     .await
