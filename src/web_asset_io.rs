@@ -86,7 +86,11 @@ impl AssetIo for WebAssetIo {
         self.default_io.read_directory(path)
     }
 
-    fn watch_path_for_changes(&self, path: &Path) -> Result<(), AssetIoError> {
+    fn watch_path_for_changes(
+        &self,
+        path: &Path,
+        _to_reload: Option<PathBuf>,
+    ) -> Result<(), AssetIoError> {
         if is_http(path) {
             // TODO: we could potentially start polling over http here
             // but should probably only be done if the server supports caching

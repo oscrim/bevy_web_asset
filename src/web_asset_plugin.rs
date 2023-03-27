@@ -79,9 +79,9 @@ impl Plugin for WebAssetPlugin {
 
         // Optionally add the filesystem watcher system
         if self.asset_plugin.watch_for_changes {
-            app.add_system_to_stage(
-                bevy::asset::AssetStage::LoadAssets,
-                super::filesystem_watcher::filesystem_watcher_system,
+            app.add_system(
+                super::filesystem_watcher::filesystem_watcher_system
+                    .in_base_set(bevy::asset::AssetSet::LoadAssets),
             );
         }
     }
