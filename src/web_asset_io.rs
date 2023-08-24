@@ -11,6 +11,7 @@ use std::{
 pub struct WebAssetIo {
     pub(crate) default_io: Box<dyn AssetIo>,
     pub(crate) headers: Arc<RwLock<HashMap<String, String>>>,
+    pub(crate) cache_name: String,
 }
 
 fn is_http(path: &Path) -> bool {
@@ -36,6 +37,10 @@ impl AssetIo for WebAssetIo {
                     request.headers().set(&name, &value).unwrap();
                 }
 
+                let cached_response =
+                    wasm_functions::get_chache_and_set_header(&request, &self.cache_name, uri)
+                        .await;
+
                 let response = JsFuture::from(window.fetch_with_request(&request))
                     .await
                     .map(|r| r.dyn_into::<web_sys::Response>().unwrap())
@@ -45,7 +50,21 @@ impl AssetIo for WebAssetIo {
                     // warn!("Failed to fetch asset {uri}: {err:?}");
                 }
 
-                let response = response.map_err(|_| AssetIoError::NotFound(path.to_path_buf()))?;
+                let mut response =
+                    response.map_err(|_| AssetIoError::NotFound(path.to_path_buf()))?;
+
+                if let (Some(cached), 304) = (cached_response, response.status()) {
+                    response = cached.clone().unwrap();
+                } else {
+                    let cloned_response = response.clone().unwrap();
+
+                    wasm_functions::save_response_to_cache(
+                        &request,
+                        &cloned_response,
+                        &self.cache_name,
+                    )
+                    .await;
+                }
 
                 let data = JsFuture::from(response.array_buffer().unwrap())
                     .await
@@ -111,5 +130,68 @@ impl AssetIo for WebAssetIo {
 
     fn get_metadata(&self, path: &Path) -> Result<bevy::asset::Metadata, AssetIoError> {
         self.default_io.get_metadata(path)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_functions {
+    use wasm_bindgen_futures::JsFuture;
+    use web_sys::{Cache, Request, Response};
+    /// Sets the `If-None-Match` header if a previous response is in the cache and contains an etag
+    ///
+    /// returns the response if one exists
+    pub(super) async fn get_chache_and_set_header(
+        request: &Request,
+        cache_name: &str,
+        uri: &str,
+    ) -> Option<Response> {
+        let window = web_sys::window().unwrap();
+        let caches = window.caches().unwrap();
+
+        let cache: Cache = JsFuture::from(caches.open(cache_name))
+            .await
+            .unwrap()
+            .into();
+
+        // Match the request URL to get the cached response
+        let cached_response = JsFuture::from(cache.match_with_str(uri)).await.unwrap();
+
+        if cached_response.is_null() || cached_response.is_undefined() {
+            return None;
+        }
+
+        let cached_response: Response = cached_response.into();
+
+        // Get the ETag header from the cached response
+        let etag = cached_response.headers().get("etag").ok();
+
+        if let Some(Some(etag)) = etag {
+            request
+                .headers()
+                .set("If-None-Match", etag.as_str())
+                .unwrap();
+
+            Some(cached_response)
+        } else {
+            None
+        }
+    }
+
+    pub(super) async fn save_response_to_cache(
+        request: &Request,
+        response: &Response,
+        cache_name: &str,
+    ) {
+        let window = web_sys::window().unwrap();
+        let caches = window.caches().unwrap();
+
+        let cache: Cache = JsFuture::from(caches.open(cache_name))
+            .await
+            .unwrap()
+            .into();
+
+        JsFuture::from(cache.put_with_request(request, response))
+            .await
+            .unwrap();
     }
 }

@@ -20,7 +20,10 @@ use super::WebAssetIo;
 /// ```
 ///});
 #[derive(Default)]
-pub struct WebAssetPlugin;
+pub struct WebAssetPlugin {
+    /// Cache name used if run with wasm
+    pub cache_name: String,
+}
 
 impl Plugin for WebAssetPlugin {
     fn build(&self, app: &mut App) {
@@ -28,6 +31,7 @@ impl Plugin for WebAssetPlugin {
         let asset_io = WebAssetIo {
             default_io: AssetPlugin::default().create_platform_default_asset_io(),
             headers: http_headers.0.clone(),
+            cache_name: self.cache_name.clone(),
         };
 
         app.insert_resource(AssetServer::new(asset_io));
