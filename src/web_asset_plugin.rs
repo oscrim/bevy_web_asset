@@ -31,6 +31,8 @@ use super::WebAssetIo;
 pub struct WebAssetPlugin {
     /// Settings for the underlying (regular) AssetPlugin
     pub asset_plugin: AssetPlugin,
+    /// Cache name used if run with wasm
+    pub cache_name: String,
 }
 
 impl Plugin for WebAssetPlugin {
@@ -67,6 +69,7 @@ impl Plugin for WebAssetPlugin {
                 root_path,
                 filesystem_watcher,
                 headers: http_headers.0.clone(),
+                cache_name: self.cache_name.clone(),
             }
         };
 
